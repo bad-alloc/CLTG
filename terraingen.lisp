@@ -1,4 +1,5 @@
 (require 'zpng)
+(load "points.lisp") ;TODO: make a proper package.
 (declaim (optimize (speed 2) (space 2) (debug 0)))
 
 (defun power-of-two-p (x)
@@ -8,34 +9,9 @@
 (defun average (&rest values)
   (/ (apply #'+ values) (length values)))
 
-(defmacro point (x y)
-  `(cons ,x ,y))
-
-(defmacro px (point)
-  `(car ,point))
-
-(defmacro py (point)
-  `(cdr ,point))
-
 ;gets random value in [-c; c]
 (defmacro rand+/- (c)
   `(- (random (* 2 (coerce ,c 'float))) ,c))
-
-(defmacro avg-square-points (array square)
-  `(average (aref ,array (px (first ,square)) (py (first ,square)))
-	    (aref ,array (px (second ,square)) (py (second ,square)))
-	    (aref ,array (px (third ,square)) (py (third ,square)))
-	    (aref ,array (px (fourth ,square)) (py (fourth ,square)))))
-
-(defmacro set-point (map point value)
-  `(setf (aref ,map (px ,point) (py ,point)) ,value))
-
-(defmacro get-point (map point)
-  `(aref ,map (px ,point) (py ,point)))
-
-(defmacro set-point-safely (map point value)
-  `(if (= 0 (get-point ,map ,point))
-       (setf (aref ,map (px ,point) (py ,point)) ,value)))
 
 (defun make-squares (square &optional (depth 0))
   (let* ((tl (first square))  ; these four are the corners of our square
@@ -123,7 +99,7 @@
 
 (defun scale-to-byte (value min max) (round (* 255 (/ (- value min) (- max min)))))
 
-(defun draw-heightmap (map &optional (file "Programme/Lisp/Terrain/heightmap.png"))
+(defun draw-heightmap (map &optional (file "heightmap.png"))
   (let* ((size (car (array-dimensions map)))
 	 (png (make-instance 'zpng:png
                              :color-type :grayscale
