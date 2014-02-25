@@ -33,15 +33,15 @@
 ;; | x |   x is the point being set using the average s of a,b,c,d
 ;; |/ \|
 ;; c---d
-(defun diamond-step (y x stepsize height-delta arr)
+(defun diamond-step (y x stepsize height-delta map)
   (let ((d (/ stepsize 2)))
-    (setf (aref arr y x)
+    (setf (aref map y x)
 	  (+ (rand+/- height-delta)
 	     (average
-	      (aref arr (- y d) (- x d))
-	      (aref arr (+ y d) (- x d))
-	      (aref arr (- y d) (+ x d))
-	      (aref arr (+ y d) (+ x d)))))))
+	      (aref map (- y d) (- x d))
+	      (aref map (+ y d) (- x d))
+	      (aref map (- y d) (+ x d))
+	      (aref map (+ y d) (+ x d)))))))
 
 ;; square step gets a midpoint (x y) of a square and sets the points
 ;; on the corners of said square to the average of the values of the
@@ -60,67 +60,67 @@
 ;;        |   b   |       
 ;;        |       |       
 
-(defun square-step (y x stepsize height-delta arr)
-  (format t "squaring from (~a, ~a) by ~a... " x y stepsize)
+(defun square-step (y x stepsize height-delta map)
   (let* ((d (/ stepsize 2))
-	 (midpoint (aref arr x y))
+	 (midpoint (aref map x y))
 	 (above (if (> 0 (- y stepsize))
 		    0
-		    (aref arr x (- y stepsize))))
+		    (aref map x (- y stepsize))))
 	 (left (if (> 0 (- x stepsize))
 		   0
-		   (aref arr (- x stepsize) y)))
-	 (below (if (>= (+ y stepsize) (array-dimension arr 0))
+		   (aref map (- x stepsize) y)))
+	 (below (if (>= (+ y stepsize) (array-dimension map 0))
 		    0
-		    (aref arr x (+ y stepsize))))
-	 (right (if (>= (+ x stepsize) (array-dimension arr 1))
+		    (aref map x (+ y stepsize))))
+	 (right (if (>= (+ x stepsize) (array-dimension map 1))
 		    0
-		    (aref arr (+ x stepsize) y)))
-	 (top-left     (aref arr (- y d) (- x d)))
-	 (top-right    (aref arr (- y d) (+ x d)))
-	 (bottom-left  (aref arr (+ y d) (- x d)))
-	 (bottom-right (aref arr (+ y d) (+ x d))))
+		    (aref map (+ x stepsize) y)))
+	 (top-left     (aref map (- y d) (- x d)))
+	 (top-right    (aref map (- y d) (+ x d)))
+	 (bottom-left  (aref map (+ y d) (- x d)))
+	 (bottom-right (aref map (+ y d) (+ x d))))
     ; point in top side
-    (format t "ok ~%")
-    (setf (aref arr (- y d) x)
+    (setf (aref map (- y d) x)
 	  (+ (rand+/- height-delta)
 	     (average above midpoint top-left top-right)))
     ; point in left side
-    (setf (aref arr y (- x d))
+    (setf (aref map y (- x d))
 	  (+ (rand+/- height-delta)
 	     (average left midpoint top-left bottom-left)))
     ; point in right side
-    (setf (aref arr y (+ x d))
+    (setf (aref map y (+ x d))
 	  (+ (rand+/- height-delta)
 	     (average right midpoint top-right bottom-right)))
     ; point in bottom side
-    (setf (aref arr (+ y d) x)
+    (setf (aref map (+ y d) x)
 	  (+ (rand+/- height-delta)
 	     (average below midpoint bottom-left bottom-right)))))
 	  
 
 ;; set-points generates a size*size array of zeros and walks over the
-;; midpoints of the diamind-square algorithm. The array arr (which
+;; midpoints of the diamind-square algorithm. The array map (which
 ;; must be of a size 2^n+1) can be subdivided log(n) times. For each
 ;; subdivision walk-midpoints is called, which calls an anonymous
-;; function on every midpoint. This function can manipulate arr, since
-;; it is created within the let-block where arr is created and thus
+;; function on every midpoint. This function can manipulate map, since
+;; it is created within the let-block where map is created and thus
 ;; forms a closure.
 
-(defun set-points (size)
-  (let ((arr (make-array (list size size) :initial-element 0)))
+(defun make-map (size &optional (height-delta 128) (roughness 1))
+  (let ((map (make-array (list size size) :initial-element 0)))
     (do ((midpoint (cons #1=(floor (/ size 2)) #1#))
 	 (stepsize (1- size) (/ stepsize 2))
 	 (times 0 (1+ times))
 	 (index 1 (1+ index)))
 	((>= times (floor (log size 2))))
+      (format t "Iteration ~a from midpoint ~a, stepping ~a, delta ~a~%"
+	      times midpoint stepsize height-delta)
       (walk-midpoints midpoint stepsize (1- (expt 2 times))
 		      (lambda (x y stepsize)
 			(progn
-			  (format t "Working on point (~a, ~a)~%" y x)
-			  (diamond-step y x stepsize 5 arr)
-			  (square-step y x stepsize 5 arr))))
+			  (diamond-step y x stepsize height-delta map)
+			  (square-step y x stepsize height-delta map))))
+      (setf height-delta (* height-delta (expt 2 (- roughness))))
       (if (= 0 #2=(floor (/ (car midpoint) 2)))
 	  (setf midpoint (cons 1 1))
 	  (setf midpoint (cons #2# #2#))))
-    arr))(declaim (optimize (debug 3)))
+    map))
