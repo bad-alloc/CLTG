@@ -82,19 +82,19 @@
     ; point in top side
     (setf (aref map (- y d) x)
 	  (+ (rand+/- height-delta)
-	     (average above midpoint top-left top-right)))
+	     (average above midpoint top-left top-right (aref map (- y d) x))))
     ; point in left side
     (setf (aref map y (- x d))
 	  (+ (rand+/- height-delta)
-	     (average left midpoint top-left bottom-left)))
+	     (average left midpoint top-left bottom-left (aref map y (- x d)))))
     ; point in right side
     (setf (aref map y (+ x d))
 	  (+ (rand+/- height-delta)
-	     (average right midpoint top-right bottom-right)))
+	     (average right midpoint top-right bottom-right (aref map y (+ x d)))))
     ; point in bottom side
     (setf (aref map (+ y d) x)
 	  (+ (rand+/- height-delta)
-	     (average below midpoint bottom-left bottom-right)))))
+	     (average below midpoint bottom-left bottom-right (aref map (+ y d) x))))))
 	  
 
 ;; set-points generates a size*size array of zeros and walks over the
@@ -116,9 +116,10 @@
 	      times midpoint stepsize height-delta)
       (walk-midpoints midpoint stepsize (1- (expt 2 times))
 		      (lambda (x y stepsize)
-			(progn
-			  (diamond-step y x stepsize height-delta map)
-			  (square-step y x stepsize height-delta map))))
+			(diamond-step y x stepsize height-delta map)))
+      (walk-midpoints midpoint stepsize (1- (expt 2 times))
+		      (lambda (x y stepsize)
+			(square-step y x stepsize height-delta map)))
       (setf height-delta (* height-delta (expt 2 (- roughness))))
       (if (= 0 #2=(floor (/ (car midpoint) 2)))
 	  (setf midpoint (cons 1 1))
