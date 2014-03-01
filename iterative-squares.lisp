@@ -63,18 +63,10 @@
 (defun square-step (y x stepsize height-delta map)
   (let* ((d (/ stepsize 2))
 	 (midpoint (aref map x y))
-	 (above (if (> 0 (- y stepsize))
-		    0
-		    (aref map x (- y stepsize))))
-	 (left (if (> 0 (- x stepsize))
-		   0
-		   (aref map (- x stepsize) y)))
-	 (below (if (>= (+ y stepsize) (array-dimension map 0))
-		    0
-		    (aref map x (+ y stepsize))))
-	 (right (if (>= (+ x stepsize) (array-dimension map 1))
-		    0
-		    (aref map (+ x stepsize) y)))
+	 (above (aref map (mod (- y stepsize) (array-dimension map 0)) x))
+	 (left  (aref map y (mod(- x stepsize) (array-dimension map 1))))
+	 (below (aref map (mod (+ y stepsize) (array-dimension map 0)) x))
+	 (right (aref map y (mod (+ x stepsize) (array-dimension map 1))))
 	 (top-left     (aref map (- y d) (- x d)))
 	 (top-right    (aref map (- y d) (+ x d)))
 	 (bottom-left  (aref map (+ y d) (- x d)))
@@ -105,7 +97,7 @@
 ;; it is created within the let-block where map is created and thus
 ;; forms a closure.
 
-(defun make-map (size &optional (height-delta 128) (roughness 1))
+(defun make-map (size &optional (height-delta 1) (roughness 1))
   (let ((map (make-array (list size size) :initial-element 0)))
     (do ((midpoint (cons #1=(floor (/ size 2)) #1#))
 	 (stepsize (1- size) (/ stepsize 2))
